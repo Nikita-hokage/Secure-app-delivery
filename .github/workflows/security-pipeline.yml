@@ -30,7 +30,10 @@ jobs:
 
       - name: Deploy application to Kubernetes
         run: |
-          kubectl apply -f k8s/
+          kubectl apply -f k8s/namespace.yaml
+          sleep 5
+          kubectl apply -f k8s/deployment.yaml
+          kubectl apply -f k8s/service.yaml
           kubectl rollout status deployment/secure-app -n secure-app --timeout=120s
           kubectl get pods -n secure-app
           kubectl get svc -n secure-app
