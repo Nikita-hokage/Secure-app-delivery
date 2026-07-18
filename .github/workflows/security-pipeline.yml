@@ -1,0 +1,61 @@
+name: Secure Application Delivery
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-deploy-scan:
+    name: Build, deploy and scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: |
+          docker build -t secure-app:dev .
+
+      - name: Create Kubernetes cluster
+        uses: helm/kind-action@v1
+        with:
+          cluster_name: secure-app-lab
+
+      - name: Load Docker image into kind
+        run: |
+          kind load docker-image secure-app:dev --name secure-app-lab
+
+      - name: Deploy application to Kubernetes
+        run: |
+          kubectl apply -f k8s/
+          kubectl rollout status deployment/secure-app -n secure-app --timeout=120s
+          kubectl get pods -n secure-app
+          kubectl get svc -n secure-app
+
+      - name: Start port-forward
+        run: |
+          kubectl -n secure-app port-forward svc/secure-app 8080:80 > port-forward.log 2>&1 &
+          sleep 10
+          curl -f http://127.0.0.1:8080/health
+
+      - name: Run OWASP ZAP baseline scan
+        run: |
+          mkdir -p zap-reports
+          docker run --rm --network host \
+            -v "${{ github.workspace }}/zap-reports:/zap/wrk:rw" \
+            ghcr.io/zaproxy/zaproxy:stable \
+            zap-baseline.py \
+            -t http://127.0.0.1:8080 \
+            -r zap-report.html \
+            -J zap-report.json \
+            -w zap-report.md \
+            -I
+
+      - name: Upload OWASP ZAP reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: owasp-zap-reports
+          path: zap-reports/
