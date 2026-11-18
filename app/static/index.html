@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f8f7f2">
+  <title>RestoreCheck — репетиция восстановления</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <header><div class="bar"><a href="/" class="brand"><span class="mark" aria-hidden="true">↶</span> RestoreCheck</a><span>Secure App Delivery</span></div></header>
+  <main>
+    <h1>Репетиция восстановления</h1>
+    <p class="intro">После возврата к старой копии удалённые данные должны исчезнуть снова. Две контрольные записи показывают, сохранились ли данные соседей.</p>
+    <section class="scenario">
+      <div><label for="scenario">Сценарий</label><select id="scenario" disabled><option>Загрузка…</option></select></div>
+      <p id="description">Проверяем на синтетических снимках SQLite.</p>
+    </section>
+    <p id="feedback" role="status">Выполняется репетиция…</p>
+    <noscript>Включите JavaScript для веб-демо или запустите python3 -m restorecheck demo из каталога app.</noscript>
+    <article id="report" hidden>
+      <section class="verdict" id="verdict" aria-live="polite">
+        <div><span class="label">Результат репетиции</span><h2 id="verdict-title"></h2></div>
+        <div class="score"><strong id="score"></strong><span>проверок пройдено</span></div>
+      </section>
+      <div class="results-head"><h2>Проверки по таблицам</h2><label class="toggle"><input type="checkbox" id="only-failures"> Только отклонения</label></div>
+      <p class="legend">«Восстановление» и «Повтор» сверяются с ожидаемыми данными. «Между прогонами» сравнивает оба результата друг с другом.</p>
+      <div class="scroll"><table><thead><tr><th>Таблица / запись</th><th>Восстановление</th><th>Повтор</th><th>Между прогонами</th></tr></thead><tbody id="rows"></tbody></table></div>
+      <p id="empty" hidden>Все проверки пройдены. Отклонений нет.</p>
+      <div id="detail" hidden><h2>Что изменилось</h2><ul id="findings"></ul></div>
+      <section class="reproduce"><h2>Повторить локально</h2><p>В каталоге <code>app</code> выполните</p><pre><code id="command"></code></pre></section>
+    </article>
+  </main>
+</body>
+</html>
