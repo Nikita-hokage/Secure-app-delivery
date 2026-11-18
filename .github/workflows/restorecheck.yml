@@ -1,0 +1,48 @@
+name: RestoreCheck
+
+on:
+  pull_request:
+    paths:
+      - 'app/**'
+      - 'tests/**'
+      - '.github/workflows/restorecheck.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'app/**'
+      - 'tests/**'
+      - '.github/workflows/restorecheck.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  rehearse:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Test the verifier and its HTTP entry point
+        run: python3 -m unittest discover -s tests -v
+      - name: Rehearse restore, replay and offline verification
+        working-directory: app
+        run: |
+          python3 -m restorecheck fixtures "$RUNNER_TEMP/drill"
+          python3 -m restorecheck audit --contract "$RUNNER_TEMP/drill/contract.json" \
+            --before "$RUNNER_TEMP/drill/before.sqlite" --restored "$RUNNER_TEMP/drill/restored.sqlite" \
+            --retried "$RUNNER_TEMP/drill/retried.sqlite" --json > "$RUNNER_TEMP/restorecheck.json"
+          python3 - "$RUNNER_TEMP/restorecheck.json" >> "$GITHUB_STEP_SUMMARY" <<'PYTHON'
+          import json
+          import sys
+          with open(sys.argv[1], encoding="utf-8") as stream:
+              report = json.load(stream)
+          print("RestoreCheck passed", report["total"], "checks.")
+          PYTHON
+      - name: Exercise the dashboard in Chrome
+        run: |
+          python3 -m venv "$RUNNER_TEMP/browser-venv"
+          "$RUNNER_TEMP/browser-venv/bin/pip" install --disable-pip-version-check playwright==1.56.0
+          "$RUNNER_TEMP/browser-venv/bin/python" tests/browser_smoke.py
